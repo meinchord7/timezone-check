@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Timezone Check</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f3efe6;
+      --bg-spot: #e7f3f1;
+      --ink: #1b1916;
+      --muted: #655f56;
+      --card: #fffdf9;
+      --line: #e3dbcf;
+      --accent: #0c6b66;
+      --accent-soft: #e5f4f2;
+      --chip: #f6f1e8;
+      --danger: #8d3b2c;
+      --shadow: 0 20px 50px rgba(55, 40, 18, 0.08);
+      --radius: 18px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #121410;
+        --bg-spot: #1a2a28;
+        --ink: #f4f0e7;
+        --muted: #b1a89c;
+        --card: #1c1f1a;
+        --line: #31362e;
+        --accent: #8ed9d1;
+        --accent-soft: #1a3330;
+        --chip: #262a24;
+        --danger: #f0a598;
+        --shadow: 0 20px 50px rgba(0, 0, 0, 0.38);
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      color: var(--ink);
+      background:
+        radial-gradient(900px 420px at 10% -10%, var(--bg-spot), transparent 60%),
+        var(--bg);
+      line-height: 1.45;
+    }
+
+    main {
+      width: min(680px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 48px 0 64px;
+    }
+
+    header h1 {
+      margin: 0 0 8px;
+      font-size: clamp(2rem, 6vw, 2.75rem);
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+    }
+
+    header p {
+      margin: 0 0 28px;
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 38rem;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 22px;
+    }
+
+    label {
+      display: block;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    input {
+      width: 100%;
+      font: 1.05rem/1.3 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--chip);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px 16px;
+      min-height: 52px;
+    }
+
+    input:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .hint {
+      min-height: 1.3em;
+      margin: 8px 2px 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .hint.error { color: var(--danger); }
+
+    .clock {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    .date {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .time {
+      margin: 2px 0 6px;
+      font-variant-numeric: tabular-nums;
+      font-size: clamp(2.6rem, 10vw, 4.25rem);
+      letter-spacing: -0.04em;
+      line-height: 1;
+      font-weight: 600;
+    }
+
+    .zone {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .offsets {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .offset {
+      background: var(--accent-soft);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+
+    .offset b {
+      display: block;
+      font-variant-numeric: tabular-nums;
+      font-size: 1.35rem;
+      letter-spacing: -0.03em;
+      font-weight: 600;
+    }
+
+    .offset span {
+      display: block;
+      margin-top: 2px;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .defaults {
+      margin-top: 28px;
+    }
+
+    .defaults h2 {
+      margin: 0 0 10px;
+      font-size: 1.15rem;
+      font-weight: 600;
+    }
+
+    ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--card);
+      overflow: hidden;
+    }
+
+    li {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto;
+      gap: 8px 12px;
+      align-items: baseline;
+      padding: 12px 16px;
+      border-top: 1px solid var(--line);
+    }
+
+    li:first-child { border-top: 0; }
+
+    .city {
+      font-weight: 600;
+    }
+
+    .city small {
+      display: block;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      font-weight: 400;
+      color: var(--muted);
+      font-size: 0.75rem;
+    }
+
+    .mini-time {
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    .mini-off {
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      font-variant-numeric: tabular-nums;
+      font-size: 0.85rem;
+      color: var(--muted);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    noscript {
+      display: block;
+      margin-top: 16px;
+      color: var(--danger);
+    }
+
+    @media (max-width: 560px) {
+      main { padding-top: 28px; }
+      .offsets { grid-template-columns: 1fr; }
+      li {
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+          "city time"
+          "city off";
+      }
+      .city { grid-area: city; }
+      .mini-time { grid-area: time; }
+      .mini-off { grid-area: off; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Timezone Check</h1>
+      <p>Current local time in a city, plus the hour gap versus your timezone and versus Los Angeles.</p>
+    </header>
+
+    <section class="panel">
+      <label for="city">City or IANA time zone</label>
+      <input id="city" list="cities" placeholder="Tokyo, London, America/New_York…" autocomplete="off" enterkeyhint="search">
+      <datalist id="cities"></datalist>
+      <p id="hint" class="hint">Pick a city, or type an IANA name such as Europe/Paris.</p>
+
+      <div class="clock" id="clock" hidden>
+        <p class="date" id="date"></p>
+        <p class="time" id="time" aria-live="off"></p>
+        <p class="zone" id="zone"></p>
+        <div class="offsets">
+          <div class="offset">
+            <b id="vs-you">—</b>
+            <span id="vs-you-label">vs you</span>
+          </div>
+          <div class="offset">
+            <b id="vs-la">—</b>
+            <span>vs Los Angeles</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="defaults">
+      <h2>A few cities</h2>
+      <ul id="defaults"></ul>
+    </section>
+    <noscript>This page needs JavaScript to format times in other time zones.</noscript>
+  </main>
+
+  <script>
+    const CITIES = [
+      ["Los Angeles", "America/Los_Angeles"],
+      ["New York", "America/New_York"],
+      ["Chicago", "America/Chicago"],
+      ["Denver", "America/Denver"],
+      ["Phoenix", "America/Phoenix"],
+      ["Anchorage", "America/Anchorage"],
+      ["Honolulu", "Pacific/Honolulu"],
+      ["Toronto", "America/Toronto"],
+      ["Vancouver", "America/Vancouver"],
+      ["Mexico City", "America/Mexico_City"],
+      ["São Paulo", "America/Sao_Paulo"],
+      ["Buenos Aires", "America/Argentina/Buenos_Aires"],
+      ["London", "Europe/London"],
+      ["Paris", "Europe/Paris"],
+      ["Berlin", "Europe/Berlin"],
+      ["Madrid", "Europe/Madrid"],
+      ["Rome", "Europe/Rome"],
+      ["Amsterdam", "Europe/Amsterdam"],
+      ["Moscow", "Europe/Moscow"],
+      ["Istanbul", "Europe/Istanbul"],
+      ["Cairo", "Africa/Cairo"],
+      ["Johannesburg", "Africa/Johannesburg"],
+      ["Dubai", "Asia/Dubai"],
+      ["Mumbai", "Asia/Kolkata"],
+      ["Bangkok", "Asia/Bangkok"],
+      ["Singapore", "Asia/Singapore"],
+      ["Hong Kong", "Asia/Hong_Kong"],
+      ["Shanghai", "Asia/Shanghai"],
+      ["Seoul", "Asia/Seoul"],
+      ["Tokyo", "Asia/Tokyo"],
+      ["Sydney", "Australia/Sydney"],
+      ["Auckland", "Pacific/Auckland"],
+      ["UTC", "UTC"]
+    ];
+
+    const DEFAULTS = [
+      "America/Los_Angeles",
+      "America/New_York",
+      "Europe/London",
+      "Asia/Dubai",
+      "Asia/Tokyo",
+      "Australia/Sydney"
+    ];
+
+    const LA = "America/Los_Angeles";
+    const localZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+
+    const input = document.getElementById("city");
+    const datalist = document.getElementById("cities");
+    const hint = document.getElementById("hint");
+    const clock = document.getElementById("clock");
+    const dateEl = document.getElementById("date");
+    const timeEl = document.getElementById("time");
+    const zoneEl = document.getElementById("zone");
+    const vsYou = document.getElementById("vs-you");
+    const vsYouLabel = document.getElementById("vs-you-label");
+    const vsLa = document.getElementById("vs-la");
+    const defaultsEl = document.getElementById("defaults");
+
+    const byLabel = new Map();
+    for (const [city, zone] of CITIES) {
+      const label = city + " — " + zone;
+      byLabel.set(label.toLowerCase(), { city, zone });
+      byLabel.set(city.toLowerCase(), { city, zone });
+      byLabel.set(zone.toLowerCase(), { city, zone });
+      const option = document.createElement("option");
+      option.value = label;
+      datalist.appendChild(option);
+    }
+
+    const fmtCache = new Map();
+    function formatter(timeZone, options) {
+      const key = timeZone + "\n" + JSON.stringify(options);
+      let fmt = fmtCache.get(key);
+      if (!fmt) {
+        fmt = new Intl.DateTimeFormat(undefined, Object.assign({ timeZone }, options));
+        fmtCache.set(key, fmt);
+      }
+      return fmt;
+    }
+
+    function zoneOffsetMinutes(timeZone, date) {
+      const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone,
+        hourCycle: "h23",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+      }).formatToParts(date);
+      const map = {};
+      for (const part of parts) {
+        if (part.type !== "literal") map[part.type] = part.value;
+      }
+      let hour = Number(map.hour);
+      let day = Number(map.day);
+      if (hour === 24) {
+        hour = 0;
+        day += 1;
+      }
+      const asUTC = Date.UTC(
+        Number(map.year),
+        Number(map.month) - 1,
+        day,
+        hour,
+        Number(map.minute),
+        Number(map.second)
+      );
+      return Math.round((asUTC - date.getTime()) / 60000);
+    }
+
+    function formatOffset(minutes) {
+      const rounded = Math.round(minutes);
+      if (rounded === 0) return "0h";
+      const sign = rounded > 0 ? "+" : "−";
+      const abs = Math.abs(rounded);
+      const hours = Math.floor(abs / 60);
+      const mins = abs % 60;
+      return mins === 0 ? sign + hours + "h" : sign + hours + "h " + mins + "m";
+    }
+
+    function isZone(zone) {
+      try {
+        new Intl.DateTimeFormat("en-US", { timeZone: zone });
+        return true;
+      } catch (err) {
+        return false;
+      }
+    }
+
+    function resolve(raw) {
+      const text = raw.trim();
+      if (!text) return null;
+      const known = byLabel.get(text.toLowerCase());
+      if (known) return known;
+      if (isZone(text)) return { city: text, zone: text };
+      return undefined;
+    }
+
+    let selected = null;
+
+    function renderClock(now) {
+      if (!selected) {
+        clock.hidden = true;
+        return;
+      }
+      const zone = selected.zone;
+      dateEl.textContent = formatter(zone, {
+        weekday: "long",
+        month: "long",
+        day: "numeric"
+      }).format(now);
+      timeEl.textContent = formatter(zone, {
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit"
+      }).format(now);
+      zoneEl.textContent = selected.city === zone ? zone : selected.city + " · " + zone;
+
+      const here = zoneOffsetMinutes(localZone, now);
+      const there = zoneOffsetMinutes(zone, now);
+      const la = zoneOffsetMinutes(LA, now);
+      vsYou.textContent = formatOffset(there - here);
+      vsYouLabel.textContent = "vs you · " + localZone;
+      vsLa.textContent = formatOffset(there - la);
+      clock.hidden = false;
+    }
+
+    function renderDefaults(now) {
+      const here = zoneOffsetMinutes(localZone, now);
+      defaultsEl.replaceChildren();
+      for (const zone of DEFAULTS) {
+        const city = CITIES.find((row) => row[1] === zone)[0];
+        const li = document.createElement("li");
+        const name = document.createElement("div");
+        name.className = "city";
+        name.textContent = city;
+        const small = document.createElement("small");
+        small.textContent = zone;
+        name.appendChild(small);
+        const time = document.createElement("div");
+        time.className = "mini-time";
+        time.textContent = formatter(zone, {
+          hour: "numeric",
+          minute: "2-digit",
+          second: "2-digit"
+        }).format(now);
+        const off = document.createElement("div");
+        off.className = "mini-off";
+        off.textContent = formatOffset(zoneOffsetMinutes(zone, now) - here) + " vs you";
+        li.append(name, time, off);
+        defaultsEl.appendChild(li);
+      }
+    }
+
+    function tick() {
+      const now = new Date();
+      renderClock(now);
+      renderDefaults(now);
+    }
+
+    function applyInput(showError) {
+      const next = resolve(input.value);
+      if (next === undefined) {
+        selected = null;
+        clock.hidden = true;
+        hint.textContent = showError ? "Unknown city or time zone." : "Pick a city, or type an IANA name such as Europe/Paris.";
+        hint.classList.toggle("error", showError);
+        return;
+      }
+      if (next === null) {
+        selected = null;
+        clock.hidden = true;
+        hint.textContent = "Pick a city, or type an IANA name such as Europe/Paris.";
+        hint.classList.remove("error");
+        return;
+      }
+      selected = next;
+      hint.textContent = "Updating every second.";
+      hint.classList.remove("error");
+      tick();
+    }
+
+    input.addEventListener("input", () => applyInput(false));
+    input.addEventListener("change", () => applyInput(true));
+    input.addEventListener("blur", () => {
+      if (input.value.trim()) applyInput(true);
+    });
+
+    const localMatch = CITIES.find((row) => row[1] === localZone);
+    if (localMatch) {
+      input.value = localMatch[0] + " — " + localMatch[1];
+    } else {
+      input.value = "UTC — UTC";
+    }
+    applyInput(false);
+    setInterval(tick, 1000);
+  </script>
+</body>
+</html>
